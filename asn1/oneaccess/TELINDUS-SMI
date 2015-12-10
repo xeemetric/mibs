@@ -1,0 +1,408 @@
+--
+-- $Header: telindus-smi.mib,v 1.6 2006/11/20 15:10:45 nmaco Exp $
+--
+
+TELINDUS-SMI DEFINITIONS ::= BEGIN
+
+IMPORTS
+        MODULE-IDENTITY, OBJECT-IDENTITY, NOTIFICATION-TYPE, Integer32,     
+        Unsigned32, IpAddress, Counter32, Counter64, Gauge32, TimeTicks,    
+        OBJECT-TYPE, enterprises
+            FROM SNMPv2-SMI
+        DisplayString
+            FROM SNMPv2-TC
+        ifIndex
+            FROM IF-MIB;
+
+telindus MODULE-IDENTITY
+   LAST-UPDATED "200509161549Z"
+   ORGANIZATION "OneAccess"
+   CONTACT-INFO "http://www.oneaccess-net.com/telindus/"
+   DESCRIPTION
+      "..."
+   ::= {enterprises 776}
+
+GlobalIndex ::= Integer32 (0..65535)
+
+LocalIndex ::= Integer32 (0..65535)
+
+ContainmentPath ::= DisplayString
+
+ObjectRevision ::= Integer32 (0..65535)
+
+EntryDeleteValues ::= INTEGER
+                         {
+                         entrynoDelete(0),
+                         entryDelete(1)
+                         }
+
+EntryInstanceTypeValues ::= INTEGER
+                               {
+                               selectObject(1),
+                               declareObject(2)
+                               }
+
+TableIndex ::= Unsigned32
+
+FixedLengthTableActions ::= INTEGER
+                               {
+                               clearAll (1),
+                               clearRow (3)
+                               }
+
+VariableLengthTableActions ::= INTEGER
+                                  {
+                                  deleteAll (0),
+                                  deleteRow (2),
+                                  insertRow (5),
+                                  appendRow (6)
+                                  }
+
+
+-- ********************************************************************
+-- Proxy Containment tree table
+-- ********************************************************************
+
+tlsCntTree OBJECT-TYPE
+   SYNTAX      SEQUENCE OF TlsCntTreeObject
+   MAX-ACCESS  not-accessible
+   STATUS      current
+   DESCRIPTION "This table lists the containment path for each
+      instance of a MANAGED OBJECT. The value for the global index
+      of the path description within this table is used as value for
+      the global index used as indexing field in all groups/tables.
+      An object is defined in a group if there only one instance of it
+      within the containment tree of the device being managed, an object
+      is defined in a table if more than one instance may occure within the
+      containment tree of the device being managed."
+   ::= { telindus 12 }
+
+tlsCntTreeEntry OBJECT-TYPE
+   SYNTAX      TlsCntTreeObject
+   MAX-ACCESS  not-accessible
+   STATUS      current
+   DESCRIPTION ""
+   INDEX     { tlsCntTreeGlobalIndex,
+               tlsCntTreeLocalIndex }
+   ::= { tlsCntTree 1 }
+
+TlsCntTreeObject ::= SEQUENCE {
+   tlsCntTreeGlobalIndex
+      GlobalIndex,
+   tlsCntTreeLocalIndex
+      LocalIndex,
+   tlsCntTreeIfIndex
+      LocalIndex,
+   tlsCreateEntryOid
+      DisplayString,
+   tlsdeleteEntryOid
+      EntryDeleteValues,
+   tlsCntTreeInstanceValue
+      DisplayString,
+   tlsCntTreePath
+      DisplayString,
+   tlsCntTreeParentGlobalIndex
+      GlobalIndex,
+   tlsCntTreeParentLocalIndex
+      GlobalIndex,
+   tlsCntTreeRootNodeIdentifier
+      Integer32,
+   tlsCntTreeObjectNodeIdentifier
+      Integer32,
+   tlsCntTreeInstanceType
+      EntryInstanceTypeValues
+   }
+
+tlsCntTreeGlobalIndex OBJECT-TYPE
+   SYNTAX      GlobalIndex
+   MAX-ACCESS  read-only
+   STATUS      current
+   DESCRIPTION "A unique value for each instance of a MANAGED OBJECT.
+      The value ranges from 0 up to 65536. The value for the
+      tlsCntTreeGlobalIndex for each instance of a MANAGED OBJECT is
+      kept constant after each re-initialisation if the configuration
+      remains the same. If after a reconfiguration, the values of the
+      global index are recalculated and remain stable until the next
+      reconfiguration."
+   ::= { tlsCntTreeEntry 2 }
+
+tlsCntTreeLocalIndex OBJECT-TYPE
+   SYNTAX      LocalIndex
+   MAX-ACCESS  read-only
+   STATUS      current
+   DESCRIPTION "Additional indexing field to differentiate object 
+      instances found in the containment tree that share the same
+      global index number."
+   ::= { tlsCntTreeEntry 3 }
+
+tlsCntTreeIfIndex OBJECT-TYPE
+   SYNTAX      LocalIndex
+   MAX-ACCESS  read-only
+   STATUS      current
+   DESCRIPTION "The value of the interface index assigned to this object.
+      This is non-zero for objects that are MIB-II interfaces."
+   ::= { tlsCntTreeEntry 4 }
+
+tlsCreateEntryOid OBJECT-TYPE
+   SYNTAX      DisplayString
+   MAX-ACCESS  read-write
+   STATUS      current
+   DESCRIPTION "A text (ascii) representation of the value of the
+      variable that is used as INDEX field for a new instance of the
+      entry."
+   ::= { tlsCntTreeEntry 5 }
+
+tlsdeleteEntryOid OBJECT-TYPE
+   SYNTAX      EntryDeleteValues
+   MAX-ACCESS  read-write
+   STATUS      current
+   DESCRIPTION "Writing entryDelete to this variable will delete this instance."
+   ::= { tlsCntTreeEntry 6 }
+
+tlsCntTreeInstanceValue OBJECT-TYPE
+   SYNTAX      DisplayString
+   MAX-ACCESS  read-only
+   STATUS      current
+   DESCRIPTION "A text (ascii) representation of the value of the
+      variable that is used as INDEX field for the instance of the
+      entry."
+   ::= { tlsCntTreeEntry 7 }
+
+tlsCntTreePath OBJECT-TYPE
+   SYNTAX      DisplayString
+   MAX-ACCESS  read-only
+   STATUS      current
+   DESCRIPTION "This variable contains the textual discription of the
+      path for the instance of a MANAGED OBJECT."
+   ::= { tlsCntTreeEntry 10 }
+
+
+tlsCntTreeParentGlobalIndex OBJECT-TYPE
+   SYNTAX      GlobalIndex
+   MAX-ACCESS  read-only
+   STATUS      current
+   DESCRIPTION "The value of the GlobalIndex field of the instance of
+      the parent object of this managed object."
+   ::= { tlsCntTreeEntry 11 }
+
+tlsCntTreeParentLocalIndex OBJECT-TYPE
+   SYNTAX      GlobalIndex
+   MAX-ACCESS  read-only
+   STATUS      current
+   DESCRIPTION "The value of the LocalIndex field of the instance of
+      the parent object of this managed object."
+   ::= { tlsCntTreeEntry 12 }
+
+tlsCntTreeRootNodeIdentifier OBJECT-TYPE
+   SYNTAX      Integer32
+   MAX-ACCESS  read-only
+   STATUS      current
+   DESCRIPTION "The value of the identifier that represents the root node
+      from the private MIB when managing the device."
+   ::= { tlsCntTreeEntry 13 }
+
+tlsCntTreeObjectNodeIdentifier OBJECT-TYPE
+   SYNTAX      Integer32
+   MAX-ACCESS  read-only
+   STATUS      current
+   DESCRIPTION "The value of the identifier that represents the top node
+      of the object within a managed device."
+   ::= { tlsCntTreeEntry 14 }
+
+tlsCntTreeInstanceType OBJECT-TYPE
+   SYNTAX      EntryInstanceTypeValues
+   MAX-ACCESS  read-only
+   STATUS      current
+   DESCRIPTION "The instance type of this managed object."
+   ::= { tlsCntTreeEntry 15 }
+
+
+-- ********************************************************************
+-- Telindus Products
+-- ********************************************************************
+
+teliProducts      OBJECT IDENTIFIER ::= { telindus 1 }
+     -- Product Section
+
+     -- The product section contains the different products
+     -- object identifiers.  Each product has a unique object
+     -- identifier allocated from this section which is referenced
+     -- by the sysObjectID variable from RFC1156.
+
+          remote-router    OBJECT IDENTIFIER ::= { teliProducts 1 }
+
+          access-server    OBJECT IDENTIFIER ::= { teliProducts 2 }
+
+          crocusHDSL       OBJECT IDENTIFIER ::= { teliProducts 4 }
+
+          crocusSDSL       OBJECT IDENTIFIER ::= { teliProducts 6 }
+
+     -- New products will be added at the end of this list.
+
+
+-- ********************************************************************
+-- Telindus Enterprise-specific Traps.
+-- ********************************************************************
+
+-- The following defines the implementation of
+-- Enterprises-specific traps as used in the
+-- PROXY managements of CMS2 based devices.
+
+-- The object identifier that represents the
+-- enterprise in the trap contains the following
+-- elements:
+
+-- telindus OBJECT IDENTIFIER { enterprises 776 }
+
+-- enterprise OBJECT IDENTIFIER
+--    ::= { telindus SID1 MOID GID AID EID 1 BID }
+
+-- sub identifier SID1 contains a value that
+-- depends on the device that is managed
+--  ie:  6      aster4 CMS
+--       7      crocus HDSL-F
+--       8      crocus HS-F
+--       9      crocus SDSL-F
+--      10      orchid 1003-LAN
+
+-- sub identifier MOID contains a value that is
+-- derived from the tag of the managed object
+-- that generates the trap
+-- Formula:     MOID = tagvalue + 10
+
+-- sub identifier GID contains a value that is
+-- derived from the tag that represents the group
+-- that contains the alarms. Alarms are managed
+-- via the group FAULT.
+-- Formula:     GID = tagvalue + 10
+
+-- sub identifier AID contains a value that is
+-- derived from the tag of the attribute that
+-- contains the alarm condition.
+-- Formula:     AID = tagvalue + 10
+
+-- sub identifier EID contains a value that is
+-- derived from the tag of the element in the
+-- attribute that contains the alarmStatus
+-- condition.
+-- Formula:     EID = tagvalue + 10
+
+-- sub identifier with fixed value 1
+
+-- sub identifier BID contains a value that is
+-- derived from the bit number of the bit in
+-- the alarmStatus word that represents the
+-- alarm condition.
+-- Formula:     BID = bitnumber + 10
+-- Remark:      valid bitnumbers are in the
+--              range from 0 up to 15 (0 and 15
+--              included). 0 representing the LSB
+--              in the alarmword, 15 representing
+--              the MSB in the alarmword.
+
+-- tlsBitOffTrap NOTIFICATION-TYPE
+--    OBJECTS   { ifIndex,
+--                tlsTreeGlobalIndex,
+--                tlsTrapDescription,
+--                tlsSeverityLevel,
+--                tlsTrapSeverityLevel }
+--    STATUS      current
+--    DESCRIPTION
+--              "A tlsBitOffTrap signifies that
+--               the bit representing an alarm
+--               condition in the alarmword has
+--               changed from the ON to the OFF
+--               state."
+--    ::= enterprise.0.0
+
+-- tlsBitOnTrap TRAP-TYPE
+--    OBJECTS   { ifIndex,
+--                tlsTreeGlobalIndex,
+--                tlsTrapDescription,
+--                tlsSeverityLevel,
+--                tlsTrapSeverityLevel }
+--    STATUS      current
+--    DESCRIPTION
+--              "A tlsBitOnTrap signifies that
+--               the bit representing an alarm
+--               condition in the alarmword has
+--               changed from the OFF to the ON
+--               state."
+--    ::= enterprise.0.1
+
+-- Remarks:
+-- - The field ifIndex is present in the VARIABLES
+--   clause, to allow the management station to
+--   perform some action in the MIB II if the alarm
+--   is send from an object that maps to a
+--   MIB II interface.
+-- - The field tlsTreeGlobalIndex is present in the
+--   VARIABLES clause, to allow the management station
+--   to perform some action in the private mib if
+--   required.
+-- - If an element from the VARIABLES clause is not
+--   relevant for the object that is sending the
+--   alarm, than the value for the element is not present
+--   in the trap message. The value field is replaced
+--   with the asn NULL type.
+
+--   the tlsTrap group.
+--
+--   The tlsTrap group contains variables that are
+--   used in the specific traps.
+
+tlsTrapRoot OBJECT IDENTIFIER ::= { telindus 11 }
+
+tlsTrapDescription OBJECT-TYPE
+   SYNTAX      DisplayString (SIZE (0..128))
+   MAX-ACCESS  read-only
+   STATUS      current
+   DESCRIPTION
+           "A textual description of the specific trap.
+           The description contains a list of object names
+           starting at the top object, down to the object
+           that generated the trap message, followed by
+           the names of the attribute and elements down
+           to the name of the alarmbit that has changed
+           followed by the name of the state that the
+           alarmbit has become.
+
+           The names of objects are separated by a '/'.
+           The names of attribute and elements are
+           separated by a '.'."
+   ::= { tlsTrapRoot 10 }
+
+--   An example of a specific trapdescription:
+--
+--   "crocusSDSL/modem.alarmInfo.currentAlarms.testActive on"
+--
+--   If an object may occur more than once, an index may be
+--   required, in this case the text representation of the
+--   index is shown between square braquets.
+--   "objOne/objTwo[2].alarmInfo.currentAlarms.testActive off"
+
+tlsSeverityLevel OBJECT-TYPE
+   SYNTAX      Integer32
+   MAX-ACCESS  read-only
+   STATUS      current
+   DESCRIPTION
+           "A numerical value indicating the severity of
+           state of the managed device.
+
+           The information may be used to update the state
+           of the managed device in the map."
+   ::= { tlsTrapRoot 11 }
+
+tlsTrapSeverityLevel OBJECT-TYPE
+   SYNTAX      Integer32
+   MAX-ACCESS  read-only
+   STATUS      current
+   DESCRIPTION
+           "A numerical value indicating the severity of
+           the trap send.
+
+           The information may be used to update the state
+           of the managed device in the map."
+   ::= { tlsTrapRoot 12 }
+
+END
